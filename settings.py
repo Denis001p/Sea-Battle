@@ -1,30 +1,28 @@
 import pygame
-from board import Board
+import sqlite3
 
 
 def main():
     pygame.init()
-    size = width, height = 500, 500
+    size = width, height = 400, 600
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Настройки')
     running = True
 
-    background1 = Board(50, 50)
-    background1.set_view(-20, -20, 30)
-    background2 = Board(50, 50)
-    background2.set_view(-19, -21, 30)
+    cur = sqlite3.connect('settings.db').cursor()
+    nick1 = cur.execute('SELECT nickname FROM nicknames WHERE id = 1').fetchone()[0]
+    nick2 = cur.execute('SELECT nickname FROM nicknames WHERE id = 2').fetchone()[0]
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pass
             if event.type == pygame.MOUSEMOTION:
                 pass
-            screen.fill('#7092be')
-            background2.render(screen, '#888888', 1)
-            background1.render(screen, '#7092be', 1)
+            screen.blit(pygame.image.load('data/background.jpg'), (0, 0))
+
         pygame.display.flip()
     pygame.quit()
 
