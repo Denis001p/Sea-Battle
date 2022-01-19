@@ -1,11 +1,18 @@
 import os
 import sys
 import pygame
+import sqlite3
 from board import Board
-FORM = {4: [(360, 90)],
-        3: [(360, 130), (460, 130)],
-        2: [(360, 170), (430, 170), (500, 170)],
-        1: [(360, 210), (400, 210), (440, 210), (480, 210)]}
+db = sqlite3.connect('settings.db').cursor().execute('SELECT quantity FROM ships').fetchall()
+FORM = {
+    1: [(390 + i * 40, 210) for i in range(db[0][0])],
+    2: [(390 + i * 70, 170) for i in range(db[1][0])],
+    3: [(390 + i * 100, 130) for i in range(db[2][0])],
+    4: [(390+i*130, 90) for i in range(db[3][0])],
+    5: [(390+i*40, 250) for i in range(db[4][0])],
+    6: [(390+i*40, 320) for i in range(db[5][0])],
+    7: [(390+i*40, 360) for i in range(db[6][0])]
+}
 
 
 def load_image(name, colorkey=None):
@@ -28,13 +35,19 @@ class Ship(pygame.sprite.Sprite):
     def __init__(self, n, m, group):
         super().__init__(group)
         self.n = n
+        self.nn = n if n in (1, 2, 3, 4) else 1
         self.m = m
         self.r = False
-        self.size = (30*n, 30)
+        self.isbase = 1
+        self.coords = []
+        if n == 5:
+            self.nn = 2
+            self.isbase = 2
+        self.size = (30*self.nn, 30*self.isbase)
         self.image = pygame.transform.scale(load_image(f'1x{n}.png'), self.size)
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = FORM[n][m]
-        self.aura = pygame.Rect(self.rect.x-25, self.rect.y-25, 30*n+50, 80)
+        self.aura = pygame.Rect(self.rect.x-25, self.rect.y-25, 30*self.nn+50, 30*self.isbase+50)
 
     def rotate(self):
         x, y = self.rect.x, self.rect.y
@@ -47,9 +60,9 @@ class Ship(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
         if self.r:
-            self.aura = pygame.Rect(self.rect.x-25, self.rect.y-25, 80, 30*self.n+50)
+            self.aura = pygame.Rect(self.rect.x-25, self.rect.y-25, 30*self.isbase+50, 30*self.nn+50)
         else:
-            self.aura = pygame.Rect(self.rect.x-25, self.rect.y-25, 30*self.n+50, 80)
+            self.aura = pygame.Rect(self.rect.x-25, self.rect.y-25, 30*self.nn+50, 30*self.isbase+50)
 
     def update(self, *args):
         pass
@@ -57,26 +70,22 @@ class Ship(pygame.sprite.Sprite):
 
 def main(username, first):
     pygame.init()
-    size = width, height = 700, 475
+    size = width, height = 725, 500
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Морской бой')
     running = True
     draw = False
 
-    background1 = Board(50, 50)
-    background1.set_view(-20, -20, 30)
-    background2 = Board(50, 50)
-    background2.set_view(-19, -21, 30)
     mainboard = Board(10, 10)
-    mainboard.set_view(80, 20, 30)
-    shipboard = pygame.Rect((350, 80), (300, 300))
-    cont = pygame.Rect((350, 395), (300, 60))
+    mainboard.set_view(110, 50, 30)
+    shipboard = pygame.Rect((380, 80), (330, 330))
+    cont = pygame.Rect((380, 425), (330, 60))
+    stngs = pygame.Rect((20, 425), (60, 60))
 
     ships = pygame.sprite.Group()
-    Ship(4, 0, ships)
-    Ship(3, 0, ships), Ship(3, 1, ships)
-    Ship(2, 0, ships), Ship(2, 1, ships), Ship(2, 2, ships)
-    Ship(1, 0, ships), Ship(1, 1, ships), Ship(1, 2, ships), Ship(1, 3, ships)
+    for i in FORM:
+        for j in range(len(FORM[i])):
+            Ship(i, j, ships)
 
     while running:
         for event in pygame.event.get():
@@ -88,8 +97,8 @@ def main(username, first):
                 for el in ships:
                     if draw:
                         nxy = mainboard.get_cell((x, y))
-                        if not (nxy and ((nxy[0] + ship.n < 11 and not ship.r) or (nxy[1] + ship.n < 11 and ship.r)))\
-                                or (ship.rect.x, ship.rect.y) not in [(i*30+20, j*30+80) for j in range(10) for i in range(10)]\
+                        if not (nxy and ((nxy[0] + ship.nn < 11 and not ship.r) or (nxy[1] + ship.nn < 11 and ship.r)))\
+                                or (ship.rect.x, ship.rect.y) not in [(i*30+50, j*30+110) for j in range(10) for i in range(10)]\
                                 or [True for el in ships if ship.rect.colliderect(el.rect) and ship != el]:
                             if ship.r:
                                 ship.rotate()
@@ -110,6 +119,9 @@ def main(username, first):
                                     (20, 20))
                         pygame.time.Clock().tick(5)
                         pygame.display.flip()
+                if stngs.collidepoint(x, y):
+                    pygame.quit()
+                    raise ConnectionRefusedError
             if event.type == pygame.MOUSEMOTION:
                 delta = event.rel
                 x, y = event.pos
@@ -118,38 +130,55 @@ def main(username, first):
                     ship.rect.x += delta[0]
                     ship.rect.y += delta[1]
                     nxy = mainboard.get_cell((x, y))
-                    if nxy and ((nxy[0] + ship.n < 11 and not ship.r) or (nxy[1] + ship.n < 11 and ship.r)) and\
+                    if nxy and ((nxy[0] + ship.nn < 11 and not ship.r and not ship.n == 5) or
+                                (nxy[1] + ship.nn < 11 and ship.r and not ship.n == 5)
+                                or (nxy[1] + ship.nn < 11 and ship.n == 5)) and\
                             not [True for el in ships if el.aura.colliderect(ship.rect) and el != ship]:
-                        ship.rect.x = 20 + nxy[0] * 30
-                        ship.rect.y = 80 + nxy[1] * 30
+                        ship.rect.x = 50 + nxy[0] * 30
+                        ship.rect.y = 110 + nxy[1] * 30
                     ship.aura.x, ship.aura.y = ship.rect.x - 25, ship.rect.y - 25
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 if draw:
                     ship.rotate()
-            screen.fill('#7092be')
-            background2.render(screen, '#888888', 1)
-            background1.render(screen, '#7092be', 1)
+            screen.blit(load_image('background.jpg'), (0, 0))
             mainboard.render(screen, 'white', 2)
+
+            screen.blit(pygame.font.Font(None, 40).render('A', True, 'white'), (50, 80))
+            screen.blit(pygame.font.Font(None, 40).render('B', True, 'white'), (80, 80))
+            screen.blit(pygame.font.Font(None, 40).render('C', True, 'white'), (110, 80))
+            screen.blit(pygame.font.Font(None, 40).render('D', True, 'white'), (140, 80))
+            screen.blit(pygame.font.Font(None, 40).render('E', True, 'white'), (170, 80))
+            screen.blit(pygame.font.Font(None, 40).render('F', True, 'white'), (200, 80))
+            screen.blit(pygame.font.Font(None, 40).render('G', True, 'white'), (230, 80))
+            screen.blit(pygame.font.Font(None, 40).render('H', True, 'white'), (260, 80))
+            screen.blit(pygame.font.Font(None, 40).render('I', True, 'white'), (290, 80))
+            screen.blit(pygame.font.Font(None, 40).render('J', True, 'white'), (320, 80))
+            screen.blit(pygame.font.Font(None, 40).render('1', True, 'white'), (20, 110))
+            screen.blit(pygame.font.Font(None, 40).render('2', True, 'white'), (20, 140))
+            screen.blit(pygame.font.Font(None, 40).render('3', True, 'white'), (20, 170))
+            screen.blit(pygame.font.Font(None, 40).render('4', True, 'white'), (20, 200))
+            screen.blit(pygame.font.Font(None, 40).render('5', True, 'white'), (20, 230))
+            screen.blit(pygame.font.Font(None, 40).render('6', True, 'white'), (20, 260))
+            screen.blit(pygame.font.Font(None, 40).render('7', True, 'white'), (20, 290))
+            screen.blit(pygame.font.Font(None, 40).render('8', True, 'white'), (20, 320))
+            screen.blit(pygame.font.Font(None, 40).render('9', True, 'white'), (20, 350))
+            screen.blit(pygame.font.Font(None, 40).render('10', True, 'white'), (20, 380))
+
             pygame.draw.rect(screen, 'black', shipboard, 1)
             pygame.draw.rect(screen, '#3f48cc', cont, 0)
-            pygame.draw.rect(screen, 'black', ((350, 395), (300, 60)), 2)
+            pygame.draw.rect(screen, 'black', cont, 2)
+            pygame.draw.rect(screen, '#3f48cc', stngs, 0)
+            pygame.draw.rect(screen, 'black', stngs, 2)
             screen.blit(pygame.font.Font(None, 55).render(f'{username}, приготовьте флот!', True, 'white'), (20, 20))
-            screen.blit(pygame.font.Font(None, 40).render('Продолжить', True, 'white'), (410, 412)) if first else screen.blit(pygame.font.Font(None, 50).render('В бой!', True, 'white'), (445, 412))
+            screen.blit(pygame.font.Font(None, 45).render('Продолжить', True, 'white'), (450, 442)) if first else screen.blit(pygame.font.Font(None, 50).render('В бой!', True, 'white'), (470, 442))
+            screen.blit(pygame.transform.scale(load_image('stngs.png'), (50, 50)), (25, 430))
             ships.draw(screen)
         pygame.display.flip()
     pygame.quit()
     for i in range(10):
         for j in range(10):
             for el in ships:
-                if el.rect.collidepoint(20+i*30, 80+j*30):
-                    mainboard.board[j][i] = 1
-    return mainboard.board
-
-
-if __name__ == '__main__':
-    PLACEMENT1 = main('Игрок 1', 1)
-    PLACEMENT2 = main('Игрок 2', 0)
-    from pprint import pprint
-    pprint(PLACEMENT1)
-    print('----------------------------------------------')
-    pprint(PLACEMENT2)
+                if el.rect.collidepoint(50+i*30, 110+j*30):
+                    mainboard.board[j][i] = el.n
+                    el.coords.append((j, i))
+    return mainboard.board, ships
