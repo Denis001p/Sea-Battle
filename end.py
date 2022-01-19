@@ -36,4 +36,4 @@ def main(sc1, sc2, f1, f2, p1, p2):
 
 
 if __name__ == '__main__':
-    main(24, 12, 1, 5, "PLAYER1", "PLAYER2")
+    main()

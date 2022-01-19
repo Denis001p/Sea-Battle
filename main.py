@@ -37,8 +37,8 @@ while True:
                 #               [0, 0, 0, 0, 0, 0, 1, 0, 0, 6],
                 #               [2, 2, 0, 0, 0, 0, 0, 0, 0, 0],
                 #               [0, 0, 0, 0, 0, 0, 0, 0, 0, 7]], )
-                #sc1, sc2, f1, f2 = game(PLAYER1, PLAYER2, PLACEMENT1, PLACEMENT2)
-                end(24, 12, 1, 5, PLAYER1, PLAYER2)
+                sc1, sc2, f1, f2 = game(PLAYER1, PLAYER2, PLACEMENT1, PLACEMENT2)
+                end(sc1, sc2, f1, f2, PLAYER1, PLAYER2)
                 break
             except ConnectionRefusedError:
                 settings()
