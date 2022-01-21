@@ -36,6 +36,13 @@ def main(p1, p2, plsh1, plsh2, ):
     pygame.display.set_caption('Морской бой')
     running = True
     curr_move = 1
+    boom = AnimatedSprite(load_image('boom.jpeg', 'white'), 8, 6, 50, 50)
+
+    missed = []
+    wounded = []
+    destroyed1 = []
+    destroyed2 = []
+
     pl1, sh1 = plsh1
     pl2, sh2 = plsh2
     mainboard1 = Board(10, 10)
@@ -45,6 +52,13 @@ def main(p1, p2, plsh1, plsh2, ):
     mainboard2.set_view(110, 450, 30)
     mainboard2.board = pl1
 
+    ships1 = [ship for ship in sh2 if ship.type == 'ship']
+    mines1 = [ship for ship in sh2 if ship.type == 'mine']
+    minesweepers1 = [ship for ship in sh2 if ship.type == 'minesweeper']
+    ships2 = [ship for ship in sh1 if ship.type == 'ship']
+    mines2 = [ship for ship in sh1 if ship.type == 'mine']
+    minesweepers2 = [ship for ship in sh1 if ship.type == 'minesweeper']
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -53,38 +67,66 @@ def main(p1, p2, plsh1, plsh2, ):
                 if curr_move == 1:
                     if pygame.Rect((50, 110), (300, 300)).collidepoint(event.pos):
                         i, j = mainboard1.get_cell(event.pos)
-                        cell = mainboard1.board[i][j]
+                        cell = mainboard1.board[j][i]
                         if cell == '.':
+                            missed.append(((50 + 30 * i, 110 + 30 * j), (30, 30)))
                             continue
                         elif cell == 0:
-                            cell = '.'
+                            mainboard1.board[j][i] = '.'
+                            missed.append(((50 + 30 * i, 110 + 30 * j), (30, 30)))
                             curr_move = 2
                         else:
-                            for el in sh1:
+                            mainboard1.board[j][i] = 'X'
+                            wounded.append(((50 + 30 * i, 110 + 30 * j), (30, 30)))
+                            for el in sh2:
                                 for c in el.coords:
-                                    if c == (i, j):
-                                        el.coords[el.coords.index(c)] = None
-                                        print('a')
+                                    if c == (j, i):
+                                        el.coords.remove(c)
+                                        if not el.coords:
+                                            destroyed1.append(el)
+                                            for jj, ii in el.auracoords:
+                                                mainboard1.board[jj][ii] = '.'
+                                                missed.append(((50 + 30 * ii, 110 + 30 * jj), (30, 30)))
+                                            if set(ships1) == set(destroyed1):
+                                                running = False
+                                            continue
+                                        continue
+
                 else:
                     if pygame.Rect((450, 110), (300, 300)).collidepoint(event.pos):
                         i, j = mainboard2.get_cell(event.pos)
-                        cell = mainboard2.board[i][j]
+                        cell = mainboard2.board[j][i]
                         if cell == '.':
+                            missed.append(((450 + 30 * i, 110 + 30 * j), (30, 30)))
                             continue
                         elif cell == 0:
-                            cell = '.'
+                            mainboard2.board[j][i] = '.'
+                            missed.append(((450 + 30 * i, 110 + 30 * j), (30, 30)))
                             curr_move = 1
                         else:
-                            for el in sh2:
+                            mainboard2.board[j][i] = 'X'
+                            wounded.append(((450 + 30 * i, 110 + 30 * j), (30, 30)))
+                            for el in sh1:
                                 for c in el.coords:
-                                    if c == (i, j):
-                                        el.coords[el.coords.index(c)] = None
-                                        print('a')
-            if event.type == pygame.MOUSEMOTION:
-                pass
+                                    if c == (j, i):
+                                        el.coords.remove(c)
+                                        if not el.coords:
+                                            destroyed2.append(el)
+                                            for jj, ii in el.auracoords:
+                                                mainboard2.board[jj][ii] = '.'
+                                                missed.append(((450+30*ii, 110+30*jj), (30, 30)))
+                                            if set(ships2) == set(destroyed2):
+                                                running = False
+                                            continue
+                                        continue
             screen.blit(load_image('background.jpg'), (0, 0))
             mainboard1.render(screen, 'white', 2)
             mainboard2.render(screen, 'white', 2)
+
+            for rect in missed:
+                pygame.draw.rect(screen, 'grey', rect, 0)
+            for rect in wounded:
+                pygame.draw.rect(screen, 'red', rect, 0)
 
             screen.blit(pygame.font.Font(None, 40).render('A', True, 'white'), (450, 80))
             screen.blit(pygame.font.Font(None, 40).render('B', True, 'white'), (480, 80))
@@ -136,3 +178,5 @@ def main(p1, p2, plsh1, plsh2, ):
                 pygame.draw.line(screen, 'blue', (450, 420), (750, 420), 5)
         pygame.display.flip()
     pygame.quit()
+
+    return curr_move
