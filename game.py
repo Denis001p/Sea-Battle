@@ -1,45 +1,36 @@
 import pygame
 from board import Board
-from pregame import Ship, load_image, FORM
+from pregame import load_image
+from random import choice
 
 
-shot = pygame.sprite.Group()
+misses = pygame.sprite.Group()
+shots = pygame.sprite.Group()
 
 
-class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows, x, y):
-        super().__init__(shot)
-        self.frames = []
-        self.cut_sheet(sheet, columns, rows)
-        self.cur_frame = 0
-        self.image = self.frames[self.cur_frame]
-        self.rect = self.rect.move(x, y)
-
-    def cut_sheet(self, sheet, columns, rows):
-        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
-                                sheet.get_height() // rows)
-        for j in range(rows):
-            for i in range(columns):
-                frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames.append(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)))
-
-    def update(self):
-        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        self.image = self.frames[self.cur_frame]
+class MissSprite(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(misses)
+        self.image = pygame.transform.scale(load_image('missprint.png'), (30, 30))
+        self.rect = pygame.Rect((x, y), (30, 30))
 
 
-def main(p1, p2, plsh1, plsh2, ):
+class ShotSprite(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(shots)
+        self.image = pygame.transform.scale(load_image('shotprint.png'), (30, 30))
+        self.rect = pygame.Rect((x, y), (30, 30))
+
+
+def main(p1, p2, plsh1, plsh2):
     pygame.init()
     size = width, height = 825, 500
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Морской бой')
     running = True
+    clock = pygame.time.Clock()
     curr_move = 1
-    boom = AnimatedSprite(load_image('boom.jpeg', 'white'), 8, 6, 50, 50)
 
-    missed = []
-    wounded = []
     destroyed1 = []
     destroyed2 = []
 
@@ -54,39 +45,65 @@ def main(p1, p2, plsh1, plsh2, ):
 
     ships1 = [ship for ship in sh2 if ship.type == 'ship']
     mines1 = [ship for ship in sh2 if ship.type == 'mine']
-    minesweepers1 = [ship for ship in sh2 if ship.type == 'minesweeper']
     ships2 = [ship for ship in sh1 if ship.type == 'ship']
     mines2 = [ship for ship in sh1 if ship.type == 'mine']
-    minesweepers2 = [ship for ship in sh1 if ship.type == 'minesweeper']
+
+    hit = False
+    hitm = False
+    hitms = False
+    coord = ''
+    x, y = 0, 0
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
+                hit = False
+                hitm = False
+                hitms = False
+                coord = ''
+                x, y = 0, 0
                 if curr_move == 1:
                     if pygame.Rect((50, 110), (300, 300)).collidepoint(event.pos):
                         i, j = mainboard1.get_cell(event.pos)
                         cell = mainboard1.board[j][i]
+                        x, y = 50 + 30 * i, 110 + 30 * j
                         if cell == '.':
-                            missed.append(((50 + 30 * i, 110 + 30 * j), (30, 30)))
+                            MissSprite(x, y)
                             continue
                         elif cell == 0:
                             mainboard1.board[j][i] = '.'
-                            missed.append(((50 + 30 * i, 110 + 30 * j), (30, 30)))
+                            MissSprite(x, y)
                             curr_move = 2
                         else:
+                            hit = True
                             mainboard1.board[j][i] = 'X'
-                            wounded.append(((50 + 30 * i, 110 + 30 * j), (30, 30)))
+                            ShotSprite(x, y)
                             for el in sh2:
                                 for c in el.coords:
                                     if c == (j, i):
+                                        abc = 'ABCDEFGHIJ'
+                                        if el.type == 'mine':
+                                            curr_move = 2
+                                            hitm = True
+                                            if ships2:
+                                                print(ships2)
+                                                coord = choice(choice(ships2).coords)
+                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть корабль врага!'
+                                        elif el.type == 'minesweeper':
+                                            curr_move = 2
+                                            hitms = True
+                                            if mines2:
+                                                print(mines2)
+                                                coord = choice(choice(mines2).coords)
+                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть мина врага!'
                                         el.coords.remove(c)
                                         if not el.coords:
                                             destroyed1.append(el)
                                             for jj, ii in el.auracoords:
                                                 mainboard1.board[jj][ii] = '.'
-                                                missed.append(((50 + 30 * ii, 110 + 30 * jj), (30, 30)))
+                                                MissSprite(50 + 30 * ii, 110 + 30 * jj)
                                             if set(ships1) == set(destroyed1):
                                                 running = False
                                             continue
@@ -96,25 +113,42 @@ def main(p1, p2, plsh1, plsh2, ):
                     if pygame.Rect((450, 110), (300, 300)).collidepoint(event.pos):
                         i, j = mainboard2.get_cell(event.pos)
                         cell = mainboard2.board[j][i]
+                        x, y = 450 + 30 * i, 110 + 30 * j
                         if cell == '.':
-                            missed.append(((450 + 30 * i, 110 + 30 * j), (30, 30)))
+                            MissSprite(x, y)
                             continue
                         elif cell == 0:
                             mainboard2.board[j][i] = '.'
-                            missed.append(((450 + 30 * i, 110 + 30 * j), (30, 30)))
+                            MissSprite(x, y)
                             curr_move = 1
                         else:
+                            hit = True
                             mainboard2.board[j][i] = 'X'
-                            wounded.append(((450 + 30 * i, 110 + 30 * j), (30, 30)))
+                            ShotSprite(x, y)
                             for el in sh1:
                                 for c in el.coords:
                                     if c == (j, i):
+                                        abc = 'ABCDEFGHIJ'
+                                        if el.type == 'mine':
+                                            curr_move = 1
+                                            hitm = True
+                                            if ships1:
+                                                print(ships1)
+                                                coord = choice(choice(ships1).coords)
+                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть корабль врага!'
+                                        elif el.type == 'minesweeper':
+                                            curr_move = 1
+                                            hitms = True
+                                            if mines1:
+                                                print(mines1)
+                                                coord = choice(choice(mines1).coords)
+                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть мина врага!'
                                         el.coords.remove(c)
                                         if not el.coords:
                                             destroyed2.append(el)
                                             for jj, ii in el.auracoords:
                                                 mainboard2.board[jj][ii] = '.'
-                                                missed.append(((450+30*ii, 110+30*jj), (30, 30)))
+                                                MissSprite(450+30*ii, 110+30*jj)
                                             if set(ships2) == set(destroyed2):
                                                 running = False
                                             continue
@@ -122,11 +156,6 @@ def main(p1, p2, plsh1, plsh2, ):
             screen.blit(load_image('background.jpg'), (0, 0))
             mainboard1.render(screen, 'white', 2)
             mainboard2.render(screen, 'white', 2)
-
-            for rect in missed:
-                pygame.draw.rect(screen, 'grey', rect, 0)
-            for rect in wounded:
-                pygame.draw.rect(screen, 'red', rect, 0)
 
             screen.blit(pygame.font.Font(None, 40).render('A', True, 'white'), (450, 80))
             screen.blit(pygame.font.Font(None, 40).render('B', True, 'white'), (480, 80))
@@ -170,12 +199,28 @@ def main(p1, p2, plsh1, plsh2, ):
             screen.blit(pygame.font.Font(None, 40).render('9', True, 'white'), (20, 350))
             screen.blit(pygame.font.Font(None, 40).render('10', True, 'white'), (20, 380))
 
+            p = p2 if curr_move == 2 else p1
+            if hit:
+                pygame.draw.rect(screen, 'red', ((x, y), (30, 30)), 0)
+            if hitm:
+                screen.blit(pygame.font.Font(None, 40).render(f'{p}, ваша мина сработала!', True, 'white'), (20, 420))
+                if coord:
+                    screen.blit(pygame.font.Font(None, 40).render(coord, True, 'white'), (20, 450))
+            if hitms:
+                screen.blit(pygame.font.Font(None, 40).render(f'{p}, ваш минный тральщик сработал!', True, 'white'), (20, 420))
+                if coord:
+                    screen.blit(pygame.font.Font(None, 40).render(coord, True, 'white'), (20, 450))
+
+            misses.draw(screen)
+            shots.draw(screen)
+
             if curr_move == 1:
                 screen.blit(pygame.font.Font(None, 55).render(f'{p1}, ваш ход!', True, 'white'), (20, 20))
                 pygame.draw.line(screen, 'blue', (50, 420), (350, 420), 5)
             else:
                 screen.blit(pygame.font.Font(None, 55).render(f'{p2}, ваш ход!', True, 'white'), (20, 20))
                 pygame.draw.line(screen, 'blue', (450, 420), (750, 420), 5)
+        clock.tick(1000)
         pygame.display.flip()
     pygame.quit()
 

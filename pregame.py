@@ -3,15 +3,15 @@ import sys
 import pygame
 import sqlite3
 from board import Board
-db = sqlite3.connect('settings.db').cursor().execute('SELECT quantity FROM ships').fetchall()
+from settings import STNGS as db
 FORM = {
-    1: [(390 + i * 40, 210) for i in range(db[0][0])],
-    2: [(390 + i * 70, 170) for i in range(db[1][0])],
-    3: [(390 + i * 100, 130) for i in range(db[2][0])],
-    4: [(390+i*130, 90) for i in range(db[3][0])],
-    5: [(390+i*40, 250) for i in range(db[4][0])],
-    6: [(390+i*40, 320) for i in range(db[5][0])],
-    7: [(390+i*40, 360) for i in range(db[6][0])]
+    1: [(390 + i * 40, 210) for i in range(db[0])],
+    2: [(390 + i * 70, 170) for i in range(db[1])],
+    3: [(390 + i * 100, 130) for i in range(db[2])],
+    4: [(390+i*130, 90) for i in range(db[3])],
+    5: [(390+i*70, 250) for i in range(db[4])],
+    6: [(390+i*40, 320) for i in range(db[5])],
+    7: [(390+i*40, 360) for i in range(db[6])]
 }
 
 
@@ -38,8 +38,15 @@ class Ship(pygame.sprite.Sprite):
         self.nn = n if n in (1, 2, 3, 4) else 1
         self.m = m
         self.r = False
+        if n == 6:
+            self.type = 'mine'
+        elif n == 7:
+            self.type = 'minesweeper'
+        else:
+            self.type = 'ship'
         self.isbase = 1
         self.coords = []
+        self.auracoords = set()
         if n == 5:
             self.nn = 2
             self.isbase = 2
@@ -170,7 +177,8 @@ def main(username, first):
             pygame.draw.rect(screen, '#3f48cc', stngs, 0)
             pygame.draw.rect(screen, 'black', stngs, 2)
             screen.blit(pygame.font.Font(None, 55).render(f'{username}, приготовьте флот!', True, 'white'), (20, 20))
-            screen.blit(pygame.font.Font(None, 45).render('Продолжить', True, 'white'), (450, 442)) if first else screen.blit(pygame.font.Font(None, 50).render('В бой!', True, 'white'), (470, 442))
+            screen.blit(pygame.font.Font(None, 25).render('R - повернуть корабль', True, 'white'), (125, 430))
+            screen.blit(pygame.font.Font(None, 45).render('Продолжить', True, 'white'), (450, 442)) if first else screen.blit(pygame.font.Font(None, 50).render('В бой!', True, 'white'), (485, 442))
             screen.blit(pygame.transform.scale(load_image('stngs.png'), (50, 50)), (25, 430))
             ships.draw(screen)
         pygame.display.flip()
@@ -178,7 +186,10 @@ def main(username, first):
     for i in range(10):
         for j in range(10):
             for el in ships:
+                if el.aura.collidepoint(65+i*30, 125+j*30) and not el.rect.collidepoint(50+i*30, 110+j*30):
+                    el.auracoords.add((j, i))
                 if el.rect.collidepoint(50+i*30, 110+j*30):
                     mainboard.board[j][i] = el.n
                     el.coords.append((j, i))
+
     return mainboard.board, ships

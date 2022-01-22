@@ -34,7 +34,7 @@ def main():
             pygame.draw.rect(screen, 'black', ((175, 150), (250, 150)), 3)
             pygame.draw.rect(screen, 'black', ((175, 150), (250, 200)), 3)
             screen.blit(pygame.font.Font(None, 40).render('Играть', True, 'white'), (250, 162.5))
-            screen.blit(pygame.font.Font(None, 40).render('Тренировка', True, 'white'), (220, 212.5))
+            screen.blit(pygame.font.Font(None, 40).render('Мини-игры', True, 'white'), (225, 212.5))
             screen.blit(pygame.font.Font(None, 40).render('Настройки', True, 'white'), (225, 262.5))
             screen.blit(pygame.font.Font(None, 40).render('Выход', True, 'white'), (250, 312.5))
         pygame.display.flip()
