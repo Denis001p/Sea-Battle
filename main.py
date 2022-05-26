@@ -34,4 +34,4 @@ while True:
     elif st == 'quit':
         break
     print(a)
-    end()
+    end(a)

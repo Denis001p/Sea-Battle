@@ -88,16 +88,20 @@ def main(p1, p2, plsh1, plsh2):
                                             curr_move = 2
                                             hitm = True
                                             if ships2:
-                                                print(ships2)
-                                                coord = choice(choice(ships2).coords)
-                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть корабль врага!'
+                                                try:
+                                                    coord = choice(choice(ships2).coords)
+                                                    coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть корабль врага!'
+                                                except:
+                                                    coord = ''
                                         elif el.type == 'minesweeper':
                                             curr_move = 2
                                             hitms = True
                                             if mines2:
-                                                print(mines2)
-                                                coord = choice(choice(mines2).coords)
-                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть мина врага!'
+                                                try:
+                                                    coord = choice(choice(mines2).coords)
+                                                    coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть мина врага!'
+                                                except:
+                                                    coord = ''
                                         el.coords.remove(c)
                                         if not el.coords:
                                             destroyed1.append(el)
@@ -133,16 +137,20 @@ def main(p1, p2, plsh1, plsh2):
                                             curr_move = 1
                                             hitm = True
                                             if ships1:
-                                                print(ships1)
-                                                coord = choice(choice(ships1).coords)
-                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть корабль врага!'
+                                                try:
+                                                    coord = choice(choice(ships1).coords)
+                                                    coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть корабль врага!'
+                                                except:
+                                                    coord = ''
                                         elif el.type == 'minesweeper':
                                             curr_move = 1
                                             hitms = True
                                             if mines1:
-                                                print(mines1)
-                                                coord = choice(choice(mines1).coords)
-                                                coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть мина врага!'
+                                                try:
+                                                    coord = choice(choice(mines1).coords)
+                                                    coord = f'На {abc[coord[1]] + str(coord[0] + 1)} есть мина врага!'
+                                                except:
+                                                    coord = ''
                                         el.coords.remove(c)
                                         if not el.coords:
                                             destroyed2.append(el)
@@ -207,7 +215,8 @@ def main(p1, p2, plsh1, plsh2):
                 if coord:
                     screen.blit(pygame.font.Font(None, 40).render(coord, True, 'white'), (20, 450))
             if hitms:
-                screen.blit(pygame.font.Font(None, 40).render(f'{p}, ваш минный тральщик сработал!', True, 'white'), (20, 420))
+                screen.blit(pygame.font.Font(None, 40).render(f'{p}, ваш минный тральщик сработал!', True, 'white'),
+                            (20, 420))
                 if coord:
                     screen.blit(pygame.font.Font(None, 40).render(coord, True, 'white'), (20, 450))
 
@@ -224,4 +233,4 @@ def main(p1, p2, plsh1, plsh2):
         pygame.display.flip()
     pygame.quit()
 
-    return curr_move
+    return ((p1, p2) if curr_move == 1 else (p2, p1)), len(destroyed1), len(destroyed2)

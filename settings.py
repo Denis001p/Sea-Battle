@@ -87,14 +87,3 @@ def main():
             screen.blit(pygame.font.Font(None, 40).render(f'Минные тральщики:    {sh[6]}', True, 'white'), (10, 330))
         pygame.display.flip()
     pygame.quit()
-
-
-cur = sqlite3.connect('settings.db')
-STNGS = [cur.execute('SELECT quantity FROM ships WHERE id = 1').fetchone()[0],
-         cur.execute('SELECT quantity FROM ships WHERE id = 2').fetchone()[0],
-         cur.execute('SELECT quantity FROM ships WHERE id = 3').fetchone()[0],
-         cur.execute('SELECT quantity FROM ships WHERE id = 4').fetchone()[0],
-         cur.execute('SELECT quantity FROM ships WHERE id = 5').fetchone()[0],
-         cur.execute('SELECT quantity FROM ships WHERE id = 6').fetchone()[0],
-         cur.execute('SELECT quantity FROM ships WHERE id = 7').fetchone()[0]]
-print(STNGS)

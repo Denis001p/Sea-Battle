@@ -1,18 +1,8 @@
 import os
 import sys
 import pygame
-import sqlite3
 from board import Board
-from settings import STNGS as db
-FORM = {
-    1: [(390 + i * 40, 210) for i in range(db[0])],
-    2: [(390 + i * 70, 170) for i in range(db[1])],
-    3: [(390 + i * 100, 130) for i in range(db[2])],
-    4: [(390+i*130, 90) for i in range(db[3])],
-    5: [(390+i*70, 250) for i in range(db[4])],
-    6: [(390+i*40, 320) for i in range(db[5])],
-    7: [(390+i*40, 360) for i in range(db[6])]
-}
+import sqlite3
 
 
 def load_image(name, colorkey=None):
@@ -32,7 +22,7 @@ def load_image(name, colorkey=None):
 
 
 class Ship(pygame.sprite.Sprite):
-    def __init__(self, n, m, group):
+    def __init__(self, n, m, group, FORM):
         super().__init__(group)
         self.n = n
         self.nn = n if n in (1, 2, 3, 4) else 1
@@ -89,10 +79,28 @@ def main(username, first):
     cont = pygame.Rect((380, 425), (330, 60))
     stngs = pygame.Rect((20, 425), (60, 60))
 
+    cur = sqlite3.connect('settings.db')
+    FORM = {
+        1: [(390 + i * 40, 210) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 1').fetchone()[0]))],
+        2: [(390 + i * 70, 170) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 2').fetchone()[0]))],
+        3: [(390 + i * 100, 130) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 3').fetchone()[0]))],
+        4: [(390 + i * 130, 90) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 4').fetchone()[0]))],
+        5: [(390 + i * 70, 250) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 5').fetchone()[0]))],
+        6: [(390 + i * 40, 320) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 6').fetchone()[0]))],
+        7: [(390 + i * 40, 360) for i in range(int(
+            cur.execute('SELECT quantity FROM ships WHERE id = 7').fetchone()[0]))]
+    }
+
     ships = pygame.sprite.Group()
     for i in FORM:
         for j in range(len(FORM[i])):
-            Ship(i, j, ships)
+            Ship(i, j, ships, FORM)
 
     while running:
         for event in pygame.event.get():
@@ -105,7 +113,8 @@ def main(username, first):
                     if draw:
                         nxy = mainboard.get_cell((x, y))
                         if not (nxy and ((nxy[0] + ship.nn < 11 and not ship.r) or (nxy[1] + ship.nn < 11 and ship.r)))\
-                                or (ship.rect.x, ship.rect.y) not in [(i*30+50, j*30+110) for j in range(10) for i in range(10)]\
+                                or (ship.rect.x, ship.rect.y) not in [(i*30+50, j*30+110) for j in range(10) for i in
+                                                                      range(10)]\
                                 or [True for el in ships if ship.rect.colliderect(el.rect) and ship != el]:
                             if ship.r:
                                 ship.rotate()
@@ -178,7 +187,8 @@ def main(username, first):
             pygame.draw.rect(screen, 'black', stngs, 2)
             screen.blit(pygame.font.Font(None, 55).render(f'{username}, приготовьте флот!', True, 'white'), (20, 20))
             screen.blit(pygame.font.Font(None, 25).render('R - повернуть корабль', True, 'white'), (125, 430))
-            screen.blit(pygame.font.Font(None, 45).render('Продолжить', True, 'white'), (450, 442)) if first else screen.blit(pygame.font.Font(None, 50).render('В бой!', True, 'white'), (485, 442))
+            screen.blit(pygame.font.Font(None, 45).render('Продолжить', True, 'white'), (450, 442)) if first else \
+                screen.blit(pygame.font.Font(None, 50).render('В бой!', True, 'white'), (485, 442))
             screen.blit(pygame.transform.scale(load_image('stngs.png'), (50, 50)), (25, 430))
             ships.draw(screen)
         pygame.display.flip()
